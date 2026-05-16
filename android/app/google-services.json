@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "131072767171",
+    "project_id": "catequesis-9a5ad",
+    "storage_bucket": "catequesis-9a5ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:131072767171:android:846bfa41aee6f06bde9e76",
+        "android_client_info": {
+          "package_name": "com.example.catequesis"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA681XZzwF3fBNdyi-Zsz3-DS9tpGxGzYQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
