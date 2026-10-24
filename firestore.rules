@@ -1,0 +1,141 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperior() {
+      return signedIn() &&
+        request.auth.token.email.matches('.*@superior\\.com$');
+    }
+
+    function isCatequista() {
+      return signedIn() &&
+        request.auth.token.email.matches('.*@catequista\\.com$');
+    }
+
+    function hasCatequista(groupData) {
+      return groupData.keys().hasAny(['catequistaIds']) &&
+        request.auth.uid in groupData.catequistaIds;
+    }
+
+    function isAssignedCatequista(grupoId) {
+      return isCatequista() &&
+        hasCatequista(
+          get(/databases/$(database)/documents/grupos/$(grupoId)).data
+        );
+    }
+
+    function isAttendanceDay(fechaId) {
+      return get(
+        /databases/$(database)/documents/configuracion/diasAsistencia
+      ).data.dias.hasAny([fechaId]);
+    }
+
+    match /configuracion/lecciones {
+      allow read: if signedIn();
+      allow write: if isSuperior();
+    }
+
+    match /configuracion/diasAsistencia {
+      allow read: if signedIn();
+      allow write: if isSuperior();
+    }
+
+    match /incidencias/{incidenciaId} {
+      allow read: if isSuperior() ||
+        (
+          isCatequista() &&
+          isAssignedCatequista(resource.data.grupoId)
+        );
+      allow create: if isCatequista() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        isAssignedCatequista(request.resource.data.grupoId) &&
+        isAttendanceDay(request.resource.data.fechaId);
+      allow update, delete: if false;
+    }
+
+    match /reportesClase/{reporteId} {
+      allow read: if isSuperior() ||
+        (
+          isCatequista() &&
+          isAssignedCatequista(resource.data.grupoId)
+        );
+      allow create, update: if isCatequista() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        isAssignedCatequista(request.resource.data.grupoId) &&
+        isAttendanceDay(request.resource.data.fechaId);
+      allow delete: if false;
+    }
+
+    match /notificacionesSuperiores/{notificacionId} {
+      allow read, update, delete: if isSuperior();
+      allow create: if isCatequista() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        isAssignedCatequista(request.resource.data.grupoId) &&
+        isAttendanceDay(request.resource.data.fechaId);
+    }
+
+    match /grupos/{grupoId} {
+      allow read: if isSuperior() ||
+        (isCatequista() && hasCatequista(resource.data));
+      allow write: if isSuperior();
+    }
+
+    match /alumnos/{alumnoId} {
+      allow read: if isSuperior() ||
+        isAssignedCatequista(resource.data.grupoId);
+      allow create, delete: if isSuperior();
+      allow update: if isSuperior() ||
+        (
+          isAssignedCatequista(resource.data.grupoId) &&
+          request.resource.data.asistencia == resource.data.asistencia + 1 &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'asistencia',
+            'ultimaAsistencia',
+            'updatedAt'
+          ])
+        );
+
+      match /asistencias/{fechaId} {
+        allow read: if isSuperior() ||
+          isAssignedCatequista(
+            get(/databases/$(database)/documents/alumnos/$(alumnoId)).data.grupoId
+          );
+        allow create: if isSuperior() ||
+          (
+            isCatequista() &&
+            isAttendanceDay(fechaId) &&
+            request.resource.data.fecha == fechaId &&
+            request.resource.data.registradoPor == request.auth.uid &&
+            request.resource.data.presente == true &&
+            isAssignedCatequista(
+              get(/databases/$(database)/documents/alumnos/$(alumnoId)).data.grupoId
+            )
+          );
+        allow update, delete: if isSuperior();
+      }
+    }
+
+    match /catequistas/{catequistaId} {
+      allow read: if isSuperior() ||
+        (isCatequista() && request.auth.uid == catequistaId);
+      allow create: if isCatequista() &&
+        request.auth.uid == catequistaId &&
+        request.resource.data.grupo == 'No asignado';
+      allow update, delete: if isSuperior();
+    }
+
+    match /superiores/{superiorId} {
+      allow read, create, update: if isSuperior() &&
+        request.auth.uid == superiorId;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
