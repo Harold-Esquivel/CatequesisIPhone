@@ -1,9 +1,13 @@
-import 'dart:convert';
+import 'user_management_screen.dart';
+import 'help_screen.dart';
+import 'services/groups.dart';
+import 'design/module_navigation.dart';
+import 'services/report_images.dart';
+import 'design/borgona_theme.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import 'settings_screen.dart';
@@ -16,8 +20,7 @@ class HomeSuperiorScreen extends StatefulWidget {
 }
 
 class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
-  static const String _cloudinaryCloudName = 'izwqrc3a';
-  static const String _cloudinaryUploadPreset = 'reportes_unsigned';
+  final ReportImageService _reportImages = ReportImageService();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _imagePicker = ImagePicker();
@@ -66,14 +69,16 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
   @override
   void dispose() {
+    _reportImages.close();
     _incidenceSubjectController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3F2),
+      backgroundColor: Borgona.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: SafeArea(child: _buildTopBar()),
@@ -94,12 +99,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
   Widget _buildTopBar() {
     return Container(
-      color: const Color(0xFFF5F3F2),
+      color: Borgona.background,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.menu, size: 22, color: Color(0xFF1E2A44)),
+            icon: Icon(Icons.menu, size: 22, color: Borgona.navy),
             onSelected: (value) {
               if (value == 'logout') {
                 _showLogoutDialog();
@@ -109,7 +114,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               } else if (value == 'help') {
-                _showSnackBar('Ayuda pendiente de configurar');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HelpScreen(superior: true),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
@@ -118,7 +128,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 child: _buildTopMenuItem(
                   icon: Icons.tune,
                   label: 'Ajustes',
-                  color: const Color(0xFF1E2A44),
+                  color: Borgona.navy,
                 ),
               ),
               PopupMenuItem(
@@ -126,7 +136,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 child: _buildTopMenuItem(
                   icon: Icons.help_outline,
                   label: 'Ayuda',
-                  color: const Color(0xFF1E2A44),
+                  color: Borgona.navy,
                 ),
               ),
               const PopupMenuDivider(),
@@ -135,17 +145,17 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 child: _buildTopMenuItem(
                   icon: Icons.logout,
                   label: 'Salir',
-                  color: const Color(0xFFB83357),
+                  color: Borgona.burgundy,
                 ),
               ),
             ],
           ),
           const SizedBox(width: 4),
-          const Expanded(
+          Expanded(
             child: Text(
               'ESCJ Catequesis',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -155,10 +165,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           const SizedBox(width: 6),
           CircleAvatar(
             radius: 16,
-            backgroundColor: const Color(0xFFE5E1DE),
+            backgroundColor: Borgona.sunken,
             child: Icon(
               Icons.admin_panel_settings,
-              color: Colors.grey[700],
+              color: Borgona.secondary,
               size: 18,
             ),
           ),
@@ -181,9 +191,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           Container(
             width: 34,
             height: 34,
-            decoration: BoxDecoration(
+            decoration: NeoDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 19),
           ),
@@ -239,10 +249,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           children: [
             IconButton(
               onPressed: _showNotificationsSheet,
-              icon: const Icon(
-                Icons.notifications_none,
-                color: Color(0xFF1E2A44),
-              ),
+              icon: Icon(Icons.notifications_none, color: Borgona.navy),
               tooltip: 'Notificaciones',
             ),
             if (unreadCount > 0)
@@ -254,8 +261,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     horizontal: 5,
                     vertical: 2,
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB83357),
+                  decoration: NeoDecoration(
+                    color: Borgona.burgundy,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -306,11 +313,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   children: [
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Notificaciones',
                             style: TextStyle(
-                              color: Color(0xFF1E2A44),
+                              color: Borgona.navy,
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
@@ -346,8 +353,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                                         ? Icons.notifications_none
                                         : Icons.notifications_active,
                                     color: read
-                                        ? Colors.grey[500]
-                                        : const Color(0xFFB83357),
+                                        ? Borgona.secondary
+                                        : Borgona.burgundy,
                                   ),
                                   title: Text(
                                     (data['title'] ?? 'Notificacion')
@@ -391,107 +398,53 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     await batch.commit();
   }
 
-  Widget _buildSuperiorBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3F2),
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: MediaQuery.paddingOf(context).bottom + 6,
-      ),
-      child: Row(
-        children: List.generate(_modules.length, (index) {
-          final selected = _selectedModuleIndex == index;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  setState(() {
-                    _selectedModuleIndex = index;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFB83357) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFFB83357)
-                          : const Color(0xFFE5E1DE),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _moduleIcons[index],
-                        size: 20,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF1E2A44),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _modules[index],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: selected
-                              ? Colors.white
-                              : const Color(0xFF1E2A44),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
+  Widget _buildSuperiorBottomNav() => ModuleNavigation(
+    labels: _modules,
+    icons: _moduleIcons,
+    selectedIndex: _selectedModuleIndex,
+    onChanged: (index) => setState(() {
+      _selectedModuleIndex = index;
+    }),
+  );
 
   Widget _buildGruposModule() {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
-                child: Text(
-                  'Grupos de catequesis',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
+              const Text(
+                'Grupos de catequesis',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              ElevatedButton.icon(
-                onPressed: () => _showGroupDialog(),
-                icon: const Icon(Icons.add),
-                label: const Text('Crear grupo'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showGroupDialog(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Crear grupo'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final created = await showCatequistaForm(context);
+                        if (created == true) {
+                          _showSnackBar(
+                            'Catequista creado. Ya puedes asignarlo a un grupo.',
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.person_add_alt_1),
+                      label: const Text('Crear catequista'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -508,7 +461,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               }
 
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(
+                  child: Text(
+                    'No se pudo cargar la información. Revisa tu conexión.',
+                  ),
+                );
               }
 
               final grupos = snapshot.data?.docs ?? [];
@@ -518,7 +475,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   icon: Icons.groups_outlined,
                   title: 'Aun no hay grupos',
                   message:
-                      'Crea un grupo, asigna un catequista y agrega alumnos.',
+                      'Crea tu primer grupo. Puedes asignar catequistas cuando lo necesites.',
                 );
               }
 
@@ -552,10 +509,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         ? List<String>.from(data['alumnos'])
         : <String>[];
 
-    return Card(
+    return NeoCard(
       margin: const EdgeInsets.only(bottom: 14),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -565,13 +522,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         ),
         subtitle: Text('Sala: $sala | Catequista: $catequistaNombre'),
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE5E1DE),
+          backgroundColor: Borgona.sunken,
           child: Text(
             alumnos.length.toString(),
-            style: const TextStyle(
-              color: Color(0xFF1E2A44),
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Borgona.navy, fontWeight: FontWeight.bold),
           ),
         ),
         children: [
@@ -591,6 +545,16 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 onPressed: () => _showGroupDialog(groupDoc: groupDoc),
                 icon: const Icon(Icons.edit),
                 label: const Text('Editar grupo'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GroupMembersScreen(groupId: groupDoc.id),
+                  ),
+                ),
+                icon: const Icon(Icons.manage_accounts_outlined),
+                label: const Text('Administrar integrantes'),
               ),
               ElevatedButton.icon(
                 onPressed: () =>
@@ -629,7 +593,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Este grupo todavia no tiene alumnos.',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: Borgona.secondary),
                   ),
                 );
               }
@@ -648,9 +612,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.person_outline),
                     title: Text(alumnoNombre),
-                    subtitle: Text(
-                      'UID: ${doc.id} | Apoderado: $telefonoApoderado',
-                    ),
+                    subtitle: Text('Apoderado: $telefonoApoderado'),
                     trailing: Text('$asistencia asist.'),
                   );
                 }).toList(),
@@ -738,7 +700,17 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                             .orderBy('nombre')
                             .snapshots(),
                         builder: (context, snapshot) {
-                          final catequistas = snapshot.data?.docs ?? [];
+                          final catequistas = (snapshot.data?.docs ?? [])
+                              .where(
+                                (doc) =>
+                                    (doc.data()
+                                        as Map<
+                                          String,
+                                          dynamic
+                                        >?)?['eliminado'] !=
+                                    true,
+                              )
+                              .toList();
 
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -750,8 +722,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
                           if (catequistas.isEmpty) {
                             return Text(
-                              'No hay catequistas registrados aun.',
-                              style: TextStyle(color: Colors.grey[600]),
+                              'Puedes guardar el grupo sin catequista y asignarlo más adelante.',
+                              style: TextStyle(color: Borgona.secondary),
                             );
                           }
 
@@ -761,7 +733,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                               const Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  'Catequistas asignados',
+                                  'Catequistas · opcional',
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -769,8 +741,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                               ...catequistas.map((doc) {
                                 final catequista =
                                     doc.data() as Map<String, dynamic>? ?? {};
-                                final nombre = (catequista['nombre'] ?? doc.id)
-                                    .toString();
+                                final nombre =
+                                    (catequista['nombre'] ?? 'Catequista')
+                                        .toString();
                                 final selected = selectedCatequistaIds.contains(
                                   doc.id,
                                 );
@@ -779,7 +752,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                                   contentPadding: EdgeInsets.zero,
                                   value: selected,
                                   title: Text(nombre),
-                                  subtitle: Text(doc.id),
+
                                   onChanged: (checked) {
                                     setDialogState(() {
                                       if (checked == true) {
@@ -848,95 +821,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     }
 
     try {
-      final groupRef =
-          groupDoc?.reference ?? _firestore.collection('grupos').doc();
-      final oldData = groupDoc?.data() as Map<String, dynamic>? ?? {};
-      final oldCatequistaIds = <String>{
-        if (oldData['catequistaIds'] is List)
-          ...List<String>.from(oldData['catequistaIds']),
-        if ((oldData['catequistaId'] ?? '').toString().trim().isNotEmpty)
-          (oldData['catequistaId'] ?? '').toString().trim(),
-      };
-      final selectedCatequistaIds = catequistaIds
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList();
-      final catequistasInfo = <Map<String, dynamic>>[];
-
-      for (final catequistaId in selectedCatequistaIds) {
-        final catequistaDoc = await _firestore
-            .collection('catequistas')
-            .doc(catequistaId)
-            .get();
-        final catequistaData = catequistaDoc.data() ?? {};
-
-        catequistasInfo.add({
-          'uid': catequistaId,
-          'nombre': catequistaData['nombre'] ?? 'Catequista',
-          'email': catequistaData['email'] ?? '',
-        });
-      }
-
-      final firstCatequista = catequistasInfo.isNotEmpty
-          ? catequistasInfo.first
-          : <String, dynamic>{};
-      final saveData = <String, dynamic>{
-        'id': groupRef.id,
-        'nombre': cleanNombre,
-        'sala': sala.trim().isEmpty ? 'Sin sala' : sala.trim(),
-        'descripcion': descripcion.trim(),
-        'catequistaIds': selectedCatequistaIds,
-        'catequistas': catequistasInfo,
-        'catequistaId': firstCatequista['uid'] ?? '',
-        'catequista': firstCatequista,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      if (groupDoc == null) {
-        saveData['alumnos'] = <String>[];
-        saveData['createdAt'] = FieldValue.serverTimestamp();
-      }
-
-      final batch = _firestore.batch();
-      batch.set(groupRef, saveData, SetOptions(merge: true));
-
-      final removedCatequistaIds = oldCatequistaIds.difference(
-        selectedCatequistaIds.toSet(),
+      await GroupService(_firestore).save(
+        groupDoc: groupDoc,
+        nombre: nombre,
+        sala: sala,
+        descripcion: descripcion,
+        catequistaIds: catequistaIds,
       );
-
-      for (final catequistaId in removedCatequistaIds) {
-        batch.set(
-          _firestore.collection('catequistas').doc(catequistaId),
-          {
-            'grupos': FieldValue.arrayRemove([groupRef.id]),
-            'grupo': 'No asignado',
-            'grupoNombre': FieldValue.delete(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      }
-
-      for (final catequistaId in selectedCatequistaIds) {
-        batch.set(
-          _firestore.collection('catequistas').doc(catequistaId),
-          {
-            'grupos': FieldValue.arrayUnion([groupRef.id]),
-            'grupo': groupRef.id,
-            'grupoNombre': cleanNombre,
-            'sala': saveData['sala'],
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      }
-
-      await batch.commit();
       _showSnackBar('Grupo guardado');
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo guardar el grupo: $e');
+      _showSnackBar(
+        'No se pudo guardar el grupo. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -970,9 +867,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'El alumno no tendra cuenta. Firebase generara un UID unico para guardar su asistencia.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                Text(
+                  'El alumno quedará registrado en este grupo para llevar su asistencia.',
+                  style: TextStyle(fontSize: 12, color: Borgona.secondary),
                 ),
               ],
             ),
@@ -1053,10 +950,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
     try {
       await batch.commit();
-      _showSnackBar('Alumno creado con UID ${alumnoRef.id}');
+      _showSnackBar('Alumno creado');
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo crear el alumno: $e');
+      _showSnackBar(
+        'No se pudo crear el alumno. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -1124,7 +1023,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                           isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Alumno',
-                            border: OutlineInputBorder(),
+                            border: NeoInputBorder(),
                           ),
                           items: alumnos.map((doc) {
                             final data = doc.data() as Map<String, dynamic>;
@@ -1148,7 +1047,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                           isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Grupo destino',
-                            border: OutlineInputBorder(),
+                            border: NeoInputBorder(),
                           ),
                           items: targetGroups.map((doc) {
                             final data = doc.data() as Map<String, dynamic>;
@@ -1259,7 +1158,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _showSnackBar('Alumno movido a $targetGroupName');
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo mover el alumno: $e');
+      _showSnackBar(
+        'No se pudo mover el alumno. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -1305,10 +1206,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const Text(
+            Text(
               'Reportes por grupo',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -1316,7 +1217,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 6),
             Text(
               'Elige un grupo para ver sus clases por mes y revisar asistencia, incidencias y reportes.',
-              style: TextStyle(color: Colors.grey[700], height: 1.35),
+              style: TextStyle(color: Borgona.secondary, height: 1.35),
             ),
             const SizedBox(height: 16),
             if (groups.isEmpty)
@@ -1334,20 +1235,20 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     ? List<String>.from(data['alumnos'])
                     : <String>[];
 
-                return Card(
+                return NeoCard(
                   margin: const EdgeInsets.only(bottom: 10),
                   elevation: 1.5,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 10,
                     ),
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFEDE7EA),
-                      child: Icon(Icons.groups, color: Color(0xFFB83357)),
+                    leading: CircleAvatar(
+                      backgroundColor: Borgona.sunken,
+                      child: Icon(Icons.groups, color: Borgona.burgundy),
                     ),
                     title: Text(
                       name,
@@ -1417,16 +1318,16 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
             return Column(
               children: days.map((summary) {
-                return Card(
+                return NeoCard(
                   margin: const EdgeInsets.only(bottom: 10),
                   elevation: 1.3,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.event_note_outlined,
-                      color: Color(0xFFB83357),
+                      color: Borgona.burgundy,
                     ),
                     title: Text(
                       _formatReadableDate(summary.dateId),
@@ -1455,10 +1356,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     final currentYear = DateTime.now().year;
     final years = [for (var year = 2024; year <= currentYear; year++) year];
 
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -1470,7 +1371,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Mes',
-                  border: OutlineInputBorder(),
+                  border: NeoInputBorder(),
                 ),
                 items: [
                   for (var month = 1; month <= 12; month++)
@@ -1496,7 +1397,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Ano',
-                  border: OutlineInputBorder(),
+                  border: NeoInputBorder(),
                 ),
                 items: years
                     .map(
@@ -1588,8 +1489,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF1E2A44),
+                style: TextStyle(
+                  color: Borgona.navy,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1597,7 +1498,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                style: TextStyle(color: Borgona.secondary, fontSize: 13),
               ),
             ],
           ),
@@ -1607,19 +1508,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Widget _buildAttendanceDetailCard(_GroupClassDayDetail detail) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Asistencia',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -1627,13 +1528,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 8),
             Text(
               '${detail.presentAlumnos.length} de ${detail.totalAlumnos} alumnos presentes',
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: Borgona.secondary),
             ),
             const SizedBox(height: 10),
             if (detail.presentAlumnos.isEmpty)
               Text(
                 'No hay asistencias registradas para este dia.',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Borgona.secondary),
               )
             else
               Wrap(
@@ -1641,9 +1542,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 runSpacing: 8,
                 children: detail.presentAlumnos
                     .map(
-                      (name) => Chip(
-                        label: Text(name),
-                        backgroundColor: const Color(0xFFEFF7EF),
+                      (name) => NeoSurface(
+                        radius: 16,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(name),
                       ),
                     )
                     .toList(),
@@ -1655,19 +1560,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Widget _buildIncidencesDetailCard(List<Map<String, dynamic>> incidencias) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Incidencias',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -1676,7 +1581,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             if (incidencias.isEmpty)
               Text(
                 'No hay incidencias registradas.',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Borgona.secondary),
               )
             else
               ...incidencias.map(_buildIncidenceDetailTile),
@@ -1694,17 +1599,17 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E1DE)),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        border: Border.all(color: Borgona.sunken),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (fotoUrl.trim().isNotEmpty)
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
+              borderRadius: BorderRadius.circular(16),
+              child: ReportPhoto(
                 fotoUrl,
                 width: 64,
                 height: 64,
@@ -1727,12 +1632,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 const SizedBox(height: 4),
                 Text(
                   alumnos.trim().isEmpty ? 'Sin alumnos vinculados' : alumnos,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                  style: TextStyle(color: Borgona.secondary, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _formatDateTime(data['createdAt']),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(color: Borgona.secondary, fontSize: 12),
                 ),
               ],
             ),
@@ -1743,19 +1648,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Widget _buildClassReportsDetailCard(List<Map<String, dynamic>> reportes) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Reportes',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -1764,7 +1669,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             if (reportes.isEmpty)
               Text(
                 'No hay reporte de aula registrado.',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Borgona.secondary),
               )
             else
               ...reportes.map(_buildClassReportDetailTile),
@@ -1782,9 +1687,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E1DE)),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        border: Border.all(color: Borgona.sunken),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1813,7 +1718,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           const SizedBox(height: 8),
           Text(
             _formatDateTime(data['updatedAt'] ?? data['createdAt']),
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            style: TextStyle(color: Borgona.secondary, fontSize: 12),
           ),
         ],
       ),
@@ -1821,8 +1726,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Widget _buildReportPhotoPreview(String label, dynamic photoData) {
-    final photo = photoData is Map ? Map<String, dynamic>.from(photoData) : {};
-    final url = (photo['url'] ?? '').toString();
+    final url = reportPhotoUrl(photoData);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1830,10 +1734,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         AspectRatio(
           aspectRatio: 1,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
             child: url.trim().isEmpty
                 ? _buildPhotoFallbackIcon()
-                : Image.network(
+                : ReportPhoto(
                     url,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
@@ -1997,10 +1901,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        const Text(
+        Text(
           'Reportes',
           style: TextStyle(
-            color: Color(0xFF1E2A44),
+            color: Borgona.navy,
             fontSize: 24,
             fontWeight: FontWeight.w800,
           ),
@@ -2047,10 +1951,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         style: ElevatedButton.styleFrom(
           alignment: Alignment.centerLeft,
           backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1E2A44),
+          foregroundColor: Borgona.navy,
           elevation: 1.5,
           padding: const EdgeInsets.symmetric(horizontal: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
     );
@@ -2076,8 +1982,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF1E2A44),
+                style: TextStyle(
+                  color: Borgona.navy,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2085,7 +1991,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                style: TextStyle(color: Borgona.secondary, fontSize: 13),
               ),
             ],
           ),
@@ -2110,8 +2016,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         const SizedBox(height: 18),
         Text(
           'Incidencias de ${_monthName(now.month)} ${now.year}',
-          style: const TextStyle(
-            color: Color(0xFF1E2A44),
+          style: TextStyle(
+            color: Borgona.navy,
             fontSize: 17,
             fontWeight: FontWeight.w800,
           ),
@@ -2162,19 +2068,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Widget _buildIncidenceFormCard() {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Crear incidencia',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -2186,7 +2092,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   .orderBy('nombre')
                   .snapshots(),
               builder: (context, snapshot) {
-                final alumnos = snapshot.data?.docs ?? [];
+                final alumnos = (snapshot.data?.docs ?? [])
+                    .where(
+                      (doc) =>
+                          (doc.data() as Map<String, dynamic>?)?['eliminado'] !=
+                          true,
+                    )
+                    .toList();
                 final selectedId =
                     alumnos.any((doc) => doc.id == _selectedIncidenceAlumnoId)
                     ? _selectedIncidenceAlumnoId
@@ -2198,7 +2110,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Elegir un alumno (opcional)',
-                    border: OutlineInputBorder(),
+                    border: NeoInputBorder(),
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
@@ -2234,7 +2146,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               decoration: const InputDecoration(
                 labelText: 'Asunto de la Incidencia',
                 alignLabelWithHint: true,
-                border: OutlineInputBorder(),
+                border: NeoInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -2293,10 +2205,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _formatDateTime(createdAt),
     ];
 
-    return Card(
+    return NeoCard(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1.2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -2304,8 +2216,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           children: [
             if (fotoUrl.trim().isNotEmpty)
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
+                borderRadius: BorderRadius.circular(16),
+                child: ReportPhoto(
                   fotoUrl,
                   width: 64,
                   height: 64,
@@ -2323,8 +2235,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 children: [
                   Text(
                     asunto,
-                    style: const TextStyle(
-                      color: Color(0xFF1E2A44),
+                    style: TextStyle(
+                      color: Borgona.navy,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -2333,7 +2245,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   Text(
                     subtitleParts.join(' | '),
                     style: TextStyle(
-                      color: Colors.grey[700],
+                      color: Borgona.secondary,
                       fontSize: 12,
                       height: 1.35,
                     ),
@@ -2356,19 +2268,21 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           'Sube las tres fotos de como quedo el aula.',
         ),
         const SizedBox(height: 16),
-        Card(
+        NeoCard(
           margin: EdgeInsets.zero,
           elevation: 1.5,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Fotos requeridas',
                   style: TextStyle(
-                    color: Color(0xFF1E2A44),
+                    color: Borgona.navy,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -2438,14 +2352,17 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     IconData icon = Icons.photo_camera_outlined,
   }) {
     final fileName = photo?.name.trim();
+    final busy = _savingClassReport || _savingIncidence;
 
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E1DE)),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        border: Border.all(color: Borgona.sunken),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFFB83357)),
+        leading: photo == null
+            ? Icon(icon, color: Borgona.burgundy)
+            : SelectedPhotoThumbnail(photo),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           fileName == null || fileName.isEmpty ? subtitle : fileName,
@@ -2457,12 +2374,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           children: [
             if (onClear != null)
               IconButton(
-                onPressed: onClear,
+                onPressed: busy ? null : onClear,
                 icon: const Icon(Icons.close),
                 tooltip: 'Quitar foto',
               ),
             IconButton(
-              onPressed: onPick,
+              onPressed: busy ? null : onPick,
               icon: const Icon(Icons.add_a_photo_outlined),
               tooltip: 'Agregar foto',
             ),
@@ -2476,28 +2393,27 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     return Container(
       width: 64,
       height: 64,
-      decoration: BoxDecoration(
-        color: const Color(0xFFB83357).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        color: Borgona.burgundy.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.image_outlined, color: Color(0xFFB83357)),
+      child: Icon(Icons.image_outlined, color: Borgona.burgundy),
     );
   }
 
   Future<XFile?> _pickReportPhoto() async {
     try {
-      return await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 82,
-        maxWidth: 1600,
-      );
+      return await chooseReportPhoto(context, _imagePicker);
     } catch (e) {
-      _showSnackBar('No se pudo seleccionar la foto: $e');
+      _showSnackBar(
+        'No se pudo seleccionar la foto. Revisa el permiso de cámara o fotos en Ajustes.',
+      );
       return null;
     }
   }
 
   Future<void> _saveIncidence() async {
+    if (_savingIncidence) return;
     final asunto = _incidenceSubjectController.text.trim();
     final user = FirebaseAuth.instance.currentUser;
 
@@ -2554,7 +2470,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       });
       _showSnackBar('Incidencia guardada');
     } catch (e) {
-      _showSnackBar('No se pudo guardar la incidencia: $e');
+      _showSnackBar(reportSaveError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -2580,6 +2496,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }
 
   Future<void> _saveClassReport() async {
+    if (_savingClassReport) return;
     final user = FirebaseAuth.instance.currentUser;
     final missingPhoto = [
       'pizarra',
@@ -2630,7 +2547,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       });
       _showSnackBar('Reporte de clase guardado');
     } catch (e) {
-      _showSnackBar('No se pudo guardar el reporte: $e');
+      _showSnackBar(reportSaveError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -2644,84 +2561,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     required XFile photo,
     required String folder,
     required String filePrefix,
-  }) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'sin-usuario';
-    final extension = _photoExtension(photo);
-    final cloudinaryFolder = _cleanCloudinaryPath('reportes/$folder/$userId');
-    final fileName =
-        '${_cleanCloudinarySegment(filePrefix)}_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    final bytes = await photo.readAsBytes();
-    final request =
-        http.MultipartRequest(
-            'POST',
-            Uri.https(
-              'api.cloudinary.com',
-              '/v1_1/$_cloudinaryCloudName/image/upload',
-            ),
-          )
-          ..fields['upload_preset'] = _cloudinaryUploadPreset
-          ..fields['folder'] = cloudinaryFolder
-          ..files.add(
-            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
-          );
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final error = responseData['error'];
-      final message = error is Map<String, dynamic>
-          ? (error['message'] ?? 'error desconocido').toString()
-          : 'error desconocido';
-      throw Exception('Cloudinary no acepto la imagen: $message');
-    }
-
-    final secureUrl = (responseData['secure_url'] ?? '').toString();
-    final publicId = (responseData['public_id'] ?? '').toString();
-    if (secureUrl.isEmpty || publicId.isEmpty) {
-      throw Exception('Cloudinary no devolvio la URL de la imagen');
-    }
-
-    return {
-      'url': secureUrl,
-      'path': publicId,
-      'provider': 'cloudinary',
-      'publicId': publicId,
-      'assetId': (responseData['asset_id'] ?? '').toString(),
-    };
-  }
-
-  String _photoExtension(XFile photo) {
-    final name = photo.name.toLowerCase();
-    final dotIndex = name.lastIndexOf('.');
-
-    if (dotIndex >= 0 && dotIndex < name.length - 1) {
-      final extension = name.substring(dotIndex + 1);
-      if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
-        return extension;
-      }
-    }
-
-    final mimeType = photo.mimeType ?? '';
-    if (mimeType.contains('png')) return 'png';
-    if (mimeType.contains('webp')) return 'webp';
-    if (mimeType.contains('heic')) return 'heic';
-    return 'jpg';
-  }
-
-  String _cleanCloudinaryPath(String value) {
-    return value
-        .split('/')
-        .map(_cleanCloudinarySegment)
-        .where((segment) => segment.isNotEmpty)
-        .join('/');
-  }
-
-  String _cleanCloudinarySegment(String value) {
-    final cleaned = value.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-    return cleaned.trim().isEmpty ? 'archivo' : cleaned;
-  }
+  }) => _reportImages.upload(
+    photo: photo,
+    folder: folder,
+    filePrefix: filePrefix,
+    userId: FirebaseAuth.instance.currentUser!.uid,
+  );
 
   String _classPhotoLabel(String key) {
     switch (key) {
@@ -2791,19 +2636,19 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      decoration: NeoDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE5E1DE)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Borgona.sunken),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 34, color: Colors.grey[500]),
+          Icon(icon, size: 34, color: Borgona.secondary),
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF1E2A44),
+            style: TextStyle(
+              color: Borgona.navy,
               fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
@@ -2812,7 +2657,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[700], fontSize: 12),
+            style: TextStyle(color: Borgona.secondary, fontSize: 12),
           ),
         ],
       ),
@@ -2840,7 +2685,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     title: 'Grupos',
                     value: counts[0].toString(),
                     icon: Icons.groups_outlined,
-                    color: const Color(0xFF1E2A44),
+                    color: Borgona.navy,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -2849,7 +2694,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     title: 'Alumnos',
                     value: counts[1].toString(),
                     icon: Icons.school_outlined,
-                    color: const Color(0xFFB83357),
+                    color: Borgona.burgundy,
                   ),
                 ),
               ],
@@ -2859,16 +2704,16 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               title: 'Catequistas registrados',
               value: counts[2].toString(),
               icon: Icons.volunteer_activism_outlined,
-              color: const Color(0xFFB83357),
+              color: Borgona.burgundy,
             ),
             const SizedBox(height: 16),
-            Card(
+            NeoCard(
               margin: EdgeInsets.zero,
               elevation: 1.5,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2878,7 +2723,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1E2A44),
+                        color: Borgona.navy,
                       ),
                     ),
                     SizedBox(height: 10),
@@ -2902,10 +2747,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     required IconData icon,
     required Color color,
   }) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -2913,9 +2758,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
+              decoration: NeoDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(icon, color: color),
             ),
@@ -2936,7 +2781,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                    style: TextStyle(color: Borgona.secondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -2954,7 +2799,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _firestore.collection('catequistas').get(),
     ]);
 
-    return snapshots.map((snapshot) => snapshot.docs.length).toList();
+    return snapshots
+        .map(
+          (snapshot) => snapshot.docs
+              .where((doc) => (doc.data()['eliminado'] != true))
+              .length,
+        )
+        .toList();
   }
 
   Widget _buildLeccionesModule() {
@@ -2976,10 +2827,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const Text(
+            Text(
               'Lecciones',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -2987,7 +2838,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 6),
             Text(
               'Configura el link de reunion y crea tarjetas de juegos para los catequistas.',
-              style: TextStyle(color: Colors.grey[700], height: 1.35),
+              style: TextStyle(color: Borgona.secondary, height: 1.35),
             ),
             const SizedBox(height: 16),
             _buildLessonConfigCard(
@@ -3012,11 +2863,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Juegos',
                     style: TextStyle(
-                      color: Color(0xFF1E2A44),
+                      color: Borgona.navy,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                     ),
@@ -3058,13 +2909,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     required String actionLabel,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: const Color(0xFFF5F3F2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Borgona.background,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -3073,11 +2924,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB83357).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                decoration: NeoDecoration(
+                  color: Borgona.burgundy.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: const Color(0xFFB83357)),
+                child: Icon(icon, color: Borgona.burgundy),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -3086,8 +2937,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF1E2A44),
+                      style: TextStyle(
+                        color: Borgona.navy,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -3097,7 +2948,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                      style: TextStyle(color: Borgona.secondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -3105,8 +2956,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               const SizedBox(width: 10),
               Text(
                 actionLabel,
-                style: const TextStyle(
-                  color: Color(0xFFB83357),
+                style: TextStyle(
+                  color: Borgona.burgundy,
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                 ),
@@ -3127,31 +2978,25 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
     final url = (juego['url'] ?? '').toString();
     final iconKey = (juego['icono'] ?? 'sports_esports').toString();
 
-    return Card(
+    return NeoCard(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: const Color(0xFFF5F3F2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Borgona.background,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         leading: Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E2A44).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+          decoration: NeoDecoration(
+            color: Borgona.navy.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(
-            _gameIconFromKey(iconKey),
-            color: const Color(0xFF1E2A44),
-          ),
+          child: Icon(_gameIconFromKey(iconKey), color: Borgona.navy),
         ),
         title: Text(
           titulo,
-          style: const TextStyle(
-            color: Color(0xFF1E2A44),
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(color: Borgona.navy, fontWeight: FontWeight.w800),
         ),
         subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
         onTap: () => _showGameLinkDialog(
@@ -3162,7 +3007,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         trailing: IconButton(
           onPressed: () => _deleteGameLink(data: data, index: index),
           icon: const Icon(Icons.delete_outline),
-          color: const Color(0xFFB83357),
+          color: Borgona.burgundy,
           tooltip: 'Eliminar juego',
         ),
       ),
@@ -3188,10 +3033,10 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
+            Text(
               'Dias de clase',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -3199,7 +3044,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 6),
             Text(
               'Estos dias habilitan asistencia, reportes e incidencias para los catequistas.',
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: Borgona.secondary),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -3227,7 +3072,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               )
             else
               ...dias.map(
-                (dia) => Card(
+                (dia) => NeoCard(
                   child: ListTile(
                     leading: const Icon(Icons.event_available),
                     title: Text(_formatReadableDate(dia)),
@@ -3302,7 +3147,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       }, SetOptions(merge: true));
       _showSnackBar(successMessage);
     } catch (e) {
-      _showSnackBar('No se pudo habilitar el dia: $e');
+      _showSnackBar(
+        'No se pudo habilitar el dia. Revisa tu conexión e intenta de nuevo.',
+      );
     }
   }
 
@@ -3324,7 +3171,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       }, SetOptions(merge: true));
       _showSnackBar('Dia quitado');
     } catch (e) {
-      _showSnackBar('No se pudo quitar el dia: $e');
+      _showSnackBar(
+        'No se pudo quitar el dia. Revisa tu conexión e intenta de nuevo.',
+      );
     }
   }
 
@@ -3400,7 +3249,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
                 labelText: 'Link de Meet',
-                border: OutlineInputBorder(),
+                border: NeoInputBorder(),
               ),
             ),
             actions: [
@@ -3546,7 +3395,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                         controller: titleController,
                         decoration: const InputDecoration(
                           labelText: 'Nombre del juego',
-                          border: OutlineInputBorder(),
+                          border: NeoInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -3555,7 +3404,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                         keyboardType: TextInputType.url,
                         decoration: const InputDecoration(
                           labelText: 'Link del juego',
-                          border: OutlineInputBorder(),
+                          border: NeoInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -3565,7 +3414,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                             : 'sports_esports',
                         decoration: const InputDecoration(
                           labelText: 'Icono',
-                          border: OutlineInputBorder(),
+                          border: NeoInputBorder(),
                         ),
                         items: _lessonGameIcons.keys.map((key) {
                           return DropdownMenuItem(
@@ -3634,7 +3483,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       );
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo guardar el link: $e');
+      _showSnackBar(
+        'No se pudo guardar el link. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -3654,7 +3505,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _showSnackBar(successMessage);
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo guardar la informacion: $e');
+      _showSnackBar(
+        'No se pudo guardar la informacion. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -3716,7 +3569,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _showSnackBar(successMessage);
       return true;
     } catch (e) {
-      _showSnackBar('No se pudieron guardar los juegos: $e');
+      _showSnackBar(
+        'No se pudieron guardar los juegos. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -3800,12 +3655,12 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   Widget _buildWelcomeCard(String nombre) {
     return Container(
       height: 172,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E2A44),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        color: const Color(0xFF0F1C2E),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: Borgona.navy.withValues(alpha: 0.18),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -3876,11 +3731,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   }) {
     final now = TimeOfDay.now().format(context);
 
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: const Color(0xFFF5F3F2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Borgona.background,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -3888,11 +3743,11 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Informacion del Perfil',
                     style: TextStyle(
-                      color: Color(0xFF1E2A44),
+                      color: Borgona.navy,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -3901,7 +3756,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                 IconButton(
                   onPressed: onEdit,
                   icon: const Icon(Icons.edit_outlined),
-                  color: const Color(0xFFB83357),
+                  color: Borgona.burgundy,
                   tooltip: 'Editar perfil',
                 ),
               ],
@@ -3926,7 +3781,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Borgona.secondary,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -3934,8 +3789,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
           const SizedBox(height: 5),
           Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFF1E2A44),
+            style: TextStyle(
+              color: Borgona.navy,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -3947,13 +3802,13 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
 
   Widget _buildSupportCard() {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () => _showSnackBar('Soporte parroquial pendiente de configurar'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => showTechnicalSupport(context),
       child: Container(
         height: 112,
-        decoration: BoxDecoration(
-          color: const Color(0xFFB83357),
-          borderRadius: BorderRadius.circular(8),
+        decoration: NeoDecoration(
+          color: Borgona.burgundy,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(
           children: [
@@ -3973,7 +3828,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                   Container(
                     width: 42,
                     height: 42,
-                    decoration: BoxDecoration(
+                    decoration: NeoDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -3989,7 +3844,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Contactar a Soporte',
+                          'Soporte técnico',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -3998,7 +3853,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Asistencia inmediata para supervisores.',
+                          '971 135 384 · Llamar o copiar número',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -4020,8 +3875,8 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
   Widget _buildMissionCard() {
     return Container(
       height: 172,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
           image: AssetImage('assets/images/fondo.jpeg'),
           fit: BoxFit.cover,
@@ -4137,7 +3992,9 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
       _showSnackBar('Perfil actualizado');
       return true;
     } catch (e) {
-      _showSnackBar('No se pudo guardar el perfil: $e');
+      _showSnackBar(
+        'No se pudo guardar el perfil. Revisa tu conexión e intenta de nuevo.',
+      );
       return false;
     }
   }
@@ -4171,7 +4028,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey[400]),
+            Icon(icon, size: 64, color: Borgona.secondary),
             const SizedBox(height: 16),
             Text(
               title,
@@ -4181,7 +4038,7 @@ class _HomeSuperiorScreenState extends State<HomeSuperiorScreen> {
             const SizedBox(height: 8),
             Text(
               message,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Borgona.secondary),
               textAlign: TextAlign.center,
             ),
           ],

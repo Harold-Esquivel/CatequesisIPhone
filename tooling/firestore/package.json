@@ -1,0 +1,6 @@
+{
+  "name": "catequesis-firestore-tests",
+  "private": true,
+  "scripts": {"test": "node --test rules.test.cjs", "test:emulator": "firebase emulators:exec --only firestore --project demo-catequesis --config ../../firebase.emulators.json 'npm test'"},
+  "devDependencies": {"@firebase/rules-unit-testing": "^5.0.0", "firebase": "^12.0.0"}
+}

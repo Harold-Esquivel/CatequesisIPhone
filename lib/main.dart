@@ -1,3 +1,5 @@
+import 'design/borgona_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'firebase_options.dart';
 import 'home_screen_superior.dart';
@@ -10,6 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  await Borgona.loadPreferences();
   runApp(const MyApp());
 }
 
@@ -105,8 +108,8 @@ class _SplashScreenState extends State<SplashScreen>
           child: Container(
             width: 12,
             height: 12,
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E2A44),
+            decoration: NeoDecoration(
+              color: Borgona.navy,
               shape: BoxShape.circle,
             ),
           ),
@@ -118,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3F2),
+      backgroundColor: Borgona.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -141,12 +144,12 @@ class _SplashScreenState extends State<SplashScreen>
 
                       const SizedBox(height: 25),
 
-                      const Text(
+                      Text(
                         "Bienvenido",
                         style: TextStyle(
                           fontSize: 38,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E2A44),
+                          color: Borgona.navy,
                         ),
                       ),
                     ],
@@ -167,9 +170,9 @@ class _SplashScreenState extends State<SplashScreen>
                     textos[currentText],
                     key: ValueKey(currentText),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
-                      color: Colors.grey,
+                      color: Borgona.secondary,
                       height: 1.5,
                     ),
                   ),
@@ -188,77 +191,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Esclavas del Sagrado Corazón de Jesús Catequesis',
-      theme: ThemeData(
-        fontFamily: 'Georgia',
-        scaffoldBackgroundColor: const Color(0xFFF5F3F2),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFB83357),
-          primary: const Color(0xFF1E2A44),
-          secondary: const Color(0xFFB83357),
-          surface: const Color(0xFFF5F3F2),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFFF5F3F2),
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        dialogTheme: const DialogThemeData(
-          backgroundColor: Color(0xFFF5F3F2),
-          surfaceTintColor: Colors.transparent,
-        ),
-        popupMenuTheme: const PopupMenuThemeData(
-          color: Color(0xFFF5F3F2),
-          surfaceTintColor: Colors.transparent,
-        ),
-        bottomSheetTheme: const BottomSheetThemeData(
-          backgroundColor: Color(0xFFF5F3F2),
-          surfaceTintColor: Colors.transparent,
-        ),
-        datePickerTheme: const DatePickerThemeData(
-          backgroundColor: Color(0xFFF5F3F2),
-          surfaceTintColor: Colors.transparent,
-          headerBackgroundColor: Color(0xFF1E2A44),
-          headerForegroundColor: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF1E2A44),
-          elevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFB83357),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF1E2A44),
-            side: const BorderSide(color: Color(0xFFB83357)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFB83357), width: 1.4),
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: Borgona.darkMode,
+      builder: (context, dark, child) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Esclavas del Sagrado Corazón de Jesús Catequesis',
+        theme: Borgona.theme,
+        home: const SplashScreen(),
+        routes: {
+          '/home-catequista': (context) => const HomeCatequistaScreen(),
+          '/home-superior': (context) => const HomeSuperiorScreen(),
+        },
       ),
-      home: const SplashScreen(),
-      routes: {
-        '/home-catequista': (context) => const HomeCatequistaScreen(),
-        '/home-superior': (context) => const HomeSuperiorScreen(),
-      },
     );
   }
 }
@@ -269,7 +213,7 @@ class RoleSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3F2),
+      backgroundColor: Borgona.background,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -285,18 +229,14 @@ class RoleSelectionPage extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F3F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE5E1DE)),
+                      decoration: NeoDecoration(
+                        color: Borgona.background,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Borgona.sunken),
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.church,
-                            color: Color(0xFFB83357),
-                            size: 42,
-                          ),
+                          Icon(Icons.church, color: Borgona.burgundy, size: 42),
                           SizedBox(height: 12),
                           Text(
                             "ESCJ - Catequesis",
@@ -304,7 +244,7 @@ class RoleSelectionPage extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E2A44),
+                              color: Borgona.navy,
                             ),
                           ),
                           SizedBox(height: 10),
@@ -313,7 +253,7 @@ class RoleSelectionPage extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Color(0xFF1E2A44),
+                              color: Borgona.navy,
                               height: 1.3,
                             ),
                           ),
@@ -345,11 +285,11 @@ class RoleSelectionPage extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 18),
-                    const Center(
+                    Center(
                       child: Text(
                         "ESCJ - Catequesis",
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: Borgona.secondary,
                           letterSpacing: 1.5,
                           fontWeight: FontWeight.w500,
                         ),
@@ -383,16 +323,16 @@ class RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F3F2),
-          borderRadius: BorderRadius.circular(8),
+        decoration: NeoDecoration(
+          color: Borgona.background,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.15),
+              color: Borgona.secondary.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -402,8 +342,8 @@ class RoleCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: const Color(0xFFE5E1DE),
-              child: Icon(icon, color: const Color(0xFF1E2A44), size: 30),
+              backgroundColor: Borgona.sunken,
+              child: Icon(icon, color: Borgona.navy, size: 30),
             ),
 
             const SizedBox(width: 20),
@@ -414,10 +354,10 @@ class RoleCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E2A44),
+                      color: Borgona.navy,
                     ),
                   ),
 
@@ -425,13 +365,13 @@ class RoleCard extends StatelessWidget {
 
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Colors.grey, fontSize: 15),
+                    style: TextStyle(color: Borgona.secondary, fontSize: 15),
                   ),
                 ],
               ),
             ),
 
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey),
+            Icon(Icons.arrow_forward_ios_rounded, color: Borgona.secondary),
           ],
         ),
       ),
@@ -491,6 +431,17 @@ class _LoginPageState extends State<LoginPage> {
 
       final email = credential.user?.email?.toLowerCase() ?? '';
       if (email.endsWith('@catequista.com')) {
+        final profile = await FirebaseFirestore.instance
+            .collection('catequistas')
+            .doc(credential.user!.uid)
+            .get();
+        if (profile.data()?['eliminado'] == true ||
+            profile.data()?['activo'] == false) {
+          await FirebaseAuth.instance.signOut();
+          showError('Tu acceso fue desactivado. Contacta al superior.');
+          return;
+        }
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/home-catequista');
       } else if (email.endsWith('@superior.com')) {
         // Aquí puedes agregar el home para Superior
@@ -499,8 +450,11 @@ class _LoginPageState extends State<LoginPage> {
         await FirebaseAuth.instance.signOut();
         showError('Este correo no tiene un rol autorizado');
       }
-    } on FirebaseAuthException {
-      showError("Error al iniciar sesion");
+    } on FirebaseException {
+      await FirebaseAuth.instance.signOut();
+      showError(
+        "No se pudo comprobar tu acceso. Revisa tu conexión e intenta de nuevo.",
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoggingIn = false);
@@ -541,12 +495,12 @@ class _LoginPageState extends State<LoginPage> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F3F2),
+                    decoration: NeoDecoration(
+                      color: Borgona.background,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.16),
+                          color: Borgona.navy.withValues(alpha: 0.16),
                           blurRadius: 22,
                           offset: const Offset(0, 10),
                         ),
@@ -561,24 +515,20 @@ class _LoginPageState extends State<LoginPage> {
                           child: IconButton(
                             onPressed: () => Navigator.pop(context),
                             icon: const Icon(Icons.arrow_back_rounded),
-                            color: const Color(0xFF1E2A44),
+                            color: Borgona.navy,
                             tooltip: "Volver",
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Icon(
-                          Icons.church,
-                          size: 76,
-                          color: const Color(0xFF1E2A44),
-                        ),
+                        Icon(Icons.church, size: 76, color: Borgona.navy),
                         const SizedBox(height: 24),
 
-                        const Text(
+                        Text(
                           "Inicie sesion",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey,
+                            color: Borgona.secondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -589,9 +539,9 @@ class _LoginPageState extends State<LoginPage> {
                               horizontal: 14,
                               vertical: 12,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade600,
-                              borderRadius: BorderRadius.circular(14),
+                            decoration: NeoDecoration(
+                              color: Borgona.burgundy,
+                              borderRadius: BorderRadius.circular(24),
                             ),
                             child: Row(
                               children: [
@@ -625,9 +575,7 @@ class _LoginPageState extends State<LoginPage> {
                           textCapitalization: TextCapitalization.none,
                           decoration: InputDecoration(
                             labelText: "Usuario o correo",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
+                            border: NeoInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -636,9 +584,7 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: true,
                           decoration: InputDecoration(
                             labelText: "Contrasena",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
+                            border: NeoInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -647,7 +593,7 @@ class _LoginPageState extends State<LoginPage> {
                           child: ElevatedButton(
                             onPressed: _isLoggingIn ? null : login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E2A44),
+                              backgroundColor: Borgona.navy,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
                               ),

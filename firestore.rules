@@ -3,7 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null &&
+        (!request.auth.token.email.matches('.*@catequista\\.com$') ||
+          !exists(/databases/$(database)/documents/catequistas/$(request.auth.uid)) ||
+          (get(/databases/$(database)/documents/catequistas/$(request.auth.uid)).data.get('eliminado', false) != true &&
+           get(/databases/$(database)/documents/catequistas/$(request.auth.uid)).data.get('activo', true) != false));
     }
 
     function isSuperior() {
@@ -50,10 +54,11 @@ service cloud.firestore {
           isCatequista() &&
           isAssignedCatequista(resource.data.grupoId)
         );
-      allow create: if isCatequista() &&
+      allow create: if signedIn() &&
         request.resource.data.createdBy == request.auth.uid &&
-        isAssignedCatequista(request.resource.data.grupoId) &&
-        isAttendanceDay(request.resource.data.fechaId);
+        (isSuperior() ||
+          (isAssignedCatequista(request.resource.data.grupoId) &&
+           isAttendanceDay(request.resource.data.fechaId)));
       allow update, delete: if false;
     }
 
@@ -63,10 +68,11 @@ service cloud.firestore {
           isCatequista() &&
           isAssignedCatequista(resource.data.grupoId)
         );
-      allow create, update: if isCatequista() &&
+      allow create, update: if signedIn() &&
         request.resource.data.createdBy == request.auth.uid &&
-        isAssignedCatequista(request.resource.data.grupoId) &&
-        isAttendanceDay(request.resource.data.fechaId);
+        (isSuperior() ||
+          (isAssignedCatequista(request.resource.data.grupoId) &&
+           isAttendanceDay(request.resource.data.fechaId)));
       allow delete: if false;
     }
 
@@ -121,10 +127,12 @@ service cloud.firestore {
 
     match /catequistas/{catequistaId} {
       allow read: if isSuperior() ||
-        (isCatequista() && request.auth.uid == catequistaId);
-      allow create: if isCatequista() &&
-        request.auth.uid == catequistaId &&
-        request.resource.data.grupo == 'No asignado';
+        (request.auth != null && request.auth.uid == catequistaId);
+      allow create: if isSuperior() ||
+        (isCatequista() && request.auth.uid == catequistaId &&
+         request.resource.data.grupo == 'No asignado' &&
+         request.resource.data.get('eliminado', false) == false &&
+         request.resource.data.get('activo', true) == true);
       allow update, delete: if isSuperior();
     }
 

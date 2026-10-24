@@ -1,9 +1,12 @@
-import 'dart:convert';
+import 'help_screen.dart';
+import 'assigned_groups.dart';
+import 'design/module_navigation.dart';
+import 'services/report_images.dart';
+import 'design/borgona_theme.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -131,7 +134,9 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error general al cargar datos: $e');
+      debugPrint(
+        'Error general al cargar datos. Revisa tu conexión e intenta de nuevo.',
+      );
       setState(() {
         _isLoading = false;
       });
@@ -192,9 +197,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al cerrar sesión: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error al cerrar sesión. Revisa tu conexión e intenta de nuevo.',
+          ),
+        ),
+      );
     }
   }
 
@@ -215,9 +224,9 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                 Navigator.pop(context);
                 _logout();
               },
-              child: const Text(
+              child: Text(
                 'Cerrar Sesión',
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: Borgona.burgundy),
               ),
             ),
           ],
@@ -239,9 +248,9 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           Container(
             width: 34,
             height: 34,
-            decoration: BoxDecoration(
+            decoration: NeoDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 19),
           ),
@@ -259,17 +268,55 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
     );
   }
 
-  void _changeModule(int index) {
-    setState(() {
-      _selectedModuleIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return _buildContent(context);
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('catequistas')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        if (data?['eliminado'] == true || data?['activo'] == false) {
+          return Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_outline, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Tu acceso fue desactivado. Contacta al superior.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _logout,
+                        child: const Text('Volver al inicio'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    Theme.of(context);
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F3F2),
+        backgroundColor: Borgona.background,
         body: _buildLoadingScreen(),
       );
     }
@@ -278,7 +325,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
     final hasProfileImage = profileImage != null && profileImage.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3F2),
+      backgroundColor: Borgona.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: SafeArea(
@@ -287,11 +334,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             child: Row(
               children: [
                 PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.menu,
-                    size: 22,
-                    color: Color(0xFF1E2A44),
-                  ),
+                  icon: Icon(Icons.menu, size: 22, color: Borgona.navy),
                   onSelected: (String value) {
                     if (value == 'logout') {
                       _showLogoutDialog();
@@ -303,7 +346,12 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                         ),
                       );
                     } else if (value == 'help') {
-                      _showSnackBar('Ayuda pendiente de configurar');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const HelpScreen(superior: false),
+                        ),
+                      );
                     } else {
                       _showSnackBar('Seleccionado: $value');
                     }
@@ -314,7 +362,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       child: _buildTopMenuItem(
                         icon: Icons.tune,
                         label: 'Ajustes',
-                        color: const Color(0xFF1E2A44),
+                        color: Borgona.navy,
                       ),
                     ),
                     PopupMenuItem(
@@ -322,7 +370,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       child: _buildTopMenuItem(
                         icon: Icons.help_outline,
                         label: 'Ayuda',
-                        color: const Color(0xFF1E2A44),
+                        color: Borgona.navy,
                       ),
                     ),
                     const PopupMenuDivider(),
@@ -331,17 +379,17 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       child: _buildTopMenuItem(
                         icon: Icons.logout,
                         label: 'Salir',
-                        color: const Color(0xFFB83357),
+                        color: Borgona.burgundy,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(width: 4),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'ESCJ Catequesis',
                     style: TextStyle(
-                      color: Color(0xFF1E2A44),
+                      color: Borgona.navy,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -349,12 +397,12 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                 ),
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: const Color(0xFFE5E1DE),
+                  backgroundColor: Borgona.sunken,
                   backgroundImage: hasProfileImage
                       ? NetworkImage(profileImage)
                       : null,
                   child: !hasProfileImage
-                      ? Icon(Icons.person, color: Colors.grey[700], size: 18)
+                      ? Icon(Icons.person, color: Borgona.secondary, size: 18)
                       : null,
                 ),
                 const SizedBox(width: 10),
@@ -382,7 +430,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFB83357)),
+            valueColor: AlwaysStoppedAnimation<Color>(Borgona.burgundy),
           ),
           const SizedBox(height: 24),
           Text(
@@ -390,13 +438,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: Borgona.navy,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'ya estamos entrando a tu perfil',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14, color: Borgona.secondary),
           ),
         ],
       ),
@@ -411,7 +459,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
       return Center(
         child: Text(
           'Error: Usuario no autenticado',
-          style: TextStyle(color: Colors.red[600]),
+          style: TextStyle(color: Borgona.burgundy),
         ),
       );
     }
@@ -429,8 +477,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
-              style: TextStyle(color: Colors.red[600]),
+              'No se pudo cargar la información. Revisa tu conexión.',
+              style: TextStyle(color: Borgona.burgundy),
             ),
           );
         }
@@ -444,12 +492,12 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.groups, size: 64, color: Colors.grey[400]),
+                  Icon(Icons.groups, size: 64, color: Borgona.secondary),
                   const SizedBox(height: 16),
                   Text(
                     'Aún no tienes grupos asignados',
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Borgona.secondary,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -477,12 +525,12 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   ? List<String>.from(grupoData['alumnos'])
                   : <String>[];
 
-              return Card(
+              return NeoCard(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: InkWell(
                   onTap: () => Navigator.push(
@@ -509,7 +557,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                               const SizedBox(height: 6),
                               Text(
                                 'Sala: $sala | Alumnos: ${alumnos.length}',
-                                style: TextStyle(color: Colors.grey[700]),
+                                style: TextStyle(color: Borgona.secondary),
                               ),
                             ],
                           ),
@@ -542,8 +590,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
-              style: TextStyle(color: Colors.red[600]),
+              'No se pudo cargar la información. Revisa tu conexión.',
+              style: TextStyle(color: Borgona.burgundy),
             ),
           );
         }
@@ -557,10 +605,10 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Mis Lecciones',
                 style: TextStyle(
-                  color: Color(0xFF1E2A44),
+                  color: Borgona.navy,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -568,7 +616,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               const SizedBox(height: 6),
               Text(
                 'Abre la reunion o los juegos que el superior configuro para clase.',
-                style: TextStyle(color: Colors.grey[700], height: 1.35),
+                style: TextStyle(color: Borgona.secondary, height: 1.35),
               ),
               const SizedBox(height: 16),
               _buildLessonActionCard(
@@ -590,21 +638,18 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFB83357).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                    decoration: NeoDecoration(
+                      color: Borgona.burgundy.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.sports_esports,
-                      color: Color(0xFFB83357),
-                    ),
+                    child: Icon(Icons.sports_esports, color: Borgona.burgundy),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Juegos',
                       style: TextStyle(
-                        color: Color(0xFF1E2A44),
+                        color: Borgona.navy,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -614,16 +659,16 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               ),
               const SizedBox(height: 10),
               if (juegos.isEmpty)
-                Card(
+                NeoCard(
                   elevation: 1.5,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       'Aun no hay juegos cargados.',
-                      style: TextStyle(color: Colors.grey[700]),
+                      style: TextStyle(color: Borgona.secondary),
                     ),
                   ),
                 )
@@ -691,10 +736,10 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
+            Text(
               'Mensajes',
               style: TextStyle(
-                color: Color(0xFF1E2A44),
+                color: Borgona.navy,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -702,7 +747,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             const SizedBox(height: 6),
             Text(
               'Entra al WhatsApp oficial de Catequesis para comunicarte.',
-              style: TextStyle(color: Colors.grey[700], height: 1.35),
+              style: TextStyle(color: Borgona.secondary, height: 1.35),
             ),
             const SizedBox(height: 16),
             _buildLessonActionCard(
@@ -731,7 +776,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
       return Center(
         child: Text(
           'Error: Usuario no autenticado',
-          style: TextStyle(color: Colors.red[600]),
+          style: TextStyle(color: Borgona.burgundy),
         ),
       );
     }
@@ -763,8 +808,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             if (snapshot.hasError) {
               return Center(
                 child: Text(
-                  'Error: ${snapshot.error}',
-                  style: TextStyle(color: Colors.red[600]),
+                  'No se pudo cargar la información. Revisa tu conexión.',
+                  style: TextStyle(color: Borgona.burgundy),
                 ),
               );
             }
@@ -798,25 +843,25 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                         ? List<String>.from(data['alumnos'])
                         : <String>[];
 
-                    return Card(
+                    return NeoCard(
                       elevation: 2,
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
                         leading: CircleAvatar(
                           backgroundColor: claseActiva
-                              ? const Color(0xFFE5E1DE)
+                              ? Borgona.sunken
                               : Colors.white,
                           child: Icon(
                             claseActiva
                                 ? Icons.photo_camera_outlined
                                 : Icons.event_busy,
                             color: claseActiva
-                                ? const Color(0xFFB83357)
-                                : const Color(0xFF1E2A44),
+                                ? Borgona.burgundy
+                                : Borgona.navy,
                           ),
                         ),
                         title: Text(
@@ -847,18 +892,16 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
   Widget _buildReportClassStatusBanner(bool enabled, String today) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: enabled ? const Color(0xFFF5F3F2) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: enabled ? const Color(0xFFB83357) : const Color(0xFFE5E1DE),
-        ),
+      decoration: NeoDecoration(
+        color: enabled ? Borgona.background : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: enabled ? Borgona.burgundy : Borgona.sunken),
       ),
       child: Row(
         children: [
           Icon(
             enabled ? Icons.check_circle_outline : Icons.lock_clock_outlined,
-            color: enabled ? const Color(0xFFB83357) : const Color(0xFF1E2A44),
+            color: enabled ? Borgona.burgundy : Borgona.navy,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -867,9 +910,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   ? 'Hoy ($today) hay clase activa. Puedes tomar fotos desde la camara.'
                   : 'Hoy ($today) no hay clase activa. No se pueden subir reportes ni incidencias.',
               style: TextStyle(
-                color: enabled
-                    ? const Color(0xFFB83357)
-                    : const Color(0xFF1E2A44),
+                color: enabled ? Borgona.burgundy : Borgona.navy,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -887,7 +928,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
       return Center(
         child: Text(
           'Error: Usuario no autenticado',
-          style: TextStyle(color: Colors.red[600]),
+          style: TextStyle(color: Borgona.burgundy),
         ),
       );
     }
@@ -905,8 +946,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
-              style: TextStyle(color: Colors.red[600]),
+              'No se pudo cargar la información. Revisa tu conexión.',
+              style: TextStyle(color: Borgona.burgundy),
             ),
           );
         }
@@ -915,7 +956,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           return Center(
             child: Text(
               'No hay datos disponibles',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Borgona.secondary),
             ),
           );
         }
@@ -938,22 +979,18 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildReportCard(
-                'Asistencia',
-                '$asistencia%',
-                const Color(0xFFB83357),
-              ),
+              _buildReportCard('Asistencia', '$asistencia%', Borgona.burgundy),
               const SizedBox(height: 12),
               _buildReportCard(
                 'Participación',
                 '$participacion%',
-                const Color(0xFF1E2A44),
+                Borgona.navy,
               ),
               const SizedBox(height: 12),
               _buildReportCard(
                 'Tareas Completadas',
                 tareasCompletadas.toString(),
-                const Color(0xFFE5E1DE),
+                Borgona.sunken,
               ),
             ],
           ),
@@ -985,7 +1022,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         final nombre = (data['nombre'] ?? _displayNameFromUser(user))
             .toString();
         final rol = (data['rol'] ?? 'Catequista').toString();
-        final grupo = (data['grupo'] ?? 'No asignado').toString();
+        final grupo = (data['grupoNombre'] ?? 'No asignado').toString();
         final telefono = (data['telefono'] ?? 'N/A').toString();
         final cedula = (data['cedula'] ?? 'N/A').toString();
         final email = (data['email'] ?? user.email ?? 'Sin correo').toString();
@@ -1021,12 +1058,12 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
   Widget _buildCatequistaWelcomeCard(String nombre) {
     return Container(
       height: 172,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E2A44),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        color: const Color(0xFF0F1C2E),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: Borgona.navy.withValues(alpha: 0.18),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1099,35 +1136,41 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
   }) {
     final now = TimeOfDay.now().format(context);
 
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: const Color(0xFFF5F3F2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Borgona.background,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Expanded(
                   child: Text(
                     'Informacion del Perfil',
                     style: TextStyle(
-                      color: Color(0xFF1E2A44),
+                      color: Borgona.navy,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                Icon(Icons.badge_outlined, color: Color(0xFFB83357)),
+                Icon(Icons.badge_outlined, color: Borgona.burgundy),
               ],
             ),
             const SizedBox(height: 12),
             _buildCatequistaProfileRow('Nombre Completo', nombre),
             _buildCatequistaProfileRow('Rol', rol),
-            _buildCatequistaProfileRow('Grupo', grupo),
+            const Text(
+              'Grupos',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 5),
+            AssignedGroupNames(userId: FirebaseAuth.instance.currentUser!.uid),
+            const SizedBox(height: 14),
             _buildCatequistaProfileRow('Ultimo Acceso', 'Hoy, $now'),
             _buildCatequistaProfileRow('Telefono', telefono),
             _buildCatequistaProfileRow('Cedula', cedula),
@@ -1147,7 +1190,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Borgona.secondary,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -1155,8 +1198,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           const SizedBox(height: 5),
           Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFF1E2A44),
+            style: TextStyle(
+              color: Borgona.navy,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -1168,13 +1211,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
 
   Widget _buildCatequistaSupportCard() {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () => _showSnackBar('Soporte parroquial pendiente de configurar'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => showTechnicalSupport(context),
       child: Container(
         height: 112,
-        decoration: BoxDecoration(
-          color: const Color(0xFFB83357),
-          borderRadius: BorderRadius.circular(8),
+        decoration: NeoDecoration(
+          color: Borgona.burgundy,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(
           children: [
@@ -1194,7 +1237,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   Container(
                     width: 42,
                     height: 42,
-                    decoration: BoxDecoration(
+                    decoration: NeoDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -1210,7 +1253,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Contactar a Soporte',
+                          'Soporte técnico',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -1219,7 +1262,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Asistencia inmediata para catequistas.',
+                          '971 135 384 · Llamar o copiar número',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -1241,8 +1284,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
   Widget _buildCatequistaMissionCard() {
     return Container(
       height: 172,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
           image: AssetImage('assets/images/fondo.jpeg'),
           fit: BoxFit.cover,
@@ -1311,7 +1354,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey[400]),
+            Icon(icon, size: 64, color: Borgona.secondary),
             const SizedBox(height: 16),
             Text(
               title,
@@ -1321,7 +1364,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             const SizedBox(height: 8),
             Text(
               message,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Borgona.secondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1338,7 +1381,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
       return Center(
         child: Text(
           'Error: Usuario no autenticado',
-          style: TextStyle(color: Colors.red[600]),
+          style: TextStyle(color: Borgona.burgundy),
         ),
       );
     }
@@ -1356,8 +1399,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
         if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
-              style: TextStyle(color: Colors.red[600]),
+              'No se pudo cargar la información. Revisa tu conexión.',
+              style: TextStyle(color: Borgona.burgundy),
             ),
           );
         }
@@ -1366,7 +1409,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           return Center(
             child: Text(
               'No hay datos de perfil disponibles',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Borgona.secondary),
             ),
           );
         }
@@ -1376,7 +1419,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
 
         final nombre = data['nombre'] ?? user?.displayName ?? 'Catequista';
         final rol = data['rol'] ?? 'Catequista';
-        final grupo = data['grupo'] ?? 'No asignado';
+        final grupo = data['grupoNombre'] ?? 'No asignado';
         final telefono = data['telefono'] ?? 'N/A';
         final email = data['email'] ?? user?.email ?? 'N/A';
         final cedula = data['cedula'] ?? 'N/A';
@@ -1390,11 +1433,11 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               // Header con imagen y nombre
               Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
+                decoration: NeoDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [const Color(0xFFB83357), const Color(0xFF1E2A44)],
+                    colors: [Borgona.burgundy, Borgona.navy],
                   ),
                 ),
                 child: Padding(
@@ -1408,7 +1451,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       Container(
                         width: 120,
                         height: 120,
-                        decoration: BoxDecoration(
+                        decoration: NeoDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white,
                           border: Border.all(color: Colors.white, width: 4),
@@ -1420,7 +1463,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                               : null,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
+                              color: Borgona.navy.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -1430,7 +1473,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                             ? Center(
                                 child: Icon(
                                   Icons.person,
-                                  color: const Color(0xFFB83357),
+                                  color: Borgona.burgundy,
                                   size: 60,
                                 ),
                               )
@@ -1454,7 +1497,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                           horizontal: 16,
                           vertical: 8,
                         ),
-                        decoration: BoxDecoration(
+                        decoration: NeoDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
@@ -1498,7 +1541,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       title: 'Información Académica',
                       icon: Icons.school_outlined,
                       children: [
-                        _buildProfileInfoRow('Grupo', grupo),
+                        AssignedGroupNames(userId: userId),
                         _buildProfileInfoRow('Rol', rol),
                       ],
                     ),
@@ -1519,13 +1562,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
     required List<Widget> children,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3F2),
+      decoration: NeoDecoration(
+        color: Borgona.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Borgona.sunken),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Borgona.navy.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1538,14 +1581,14 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, color: const Color(0xFFB83357), size: 24),
+                Icon(icon, color: Borgona.burgundy, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Borgona.navy,
                   ),
                 ),
               ],
@@ -1560,7 +1603,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   if (index < children.length - 1)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Container(height: 1, color: Colors.grey[200]),
+                      child: Container(height: 1, color: Borgona.sunken),
                     ),
                 ],
               );
@@ -1581,7 +1624,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: Borgona.secondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1589,10 +1632,10 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
           child: Text(
             value,
             textAlign: TextAlign.end,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: Borgona.navy,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1602,85 +1645,14 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
     );
   }
 
-  Widget _buildCustomBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: MediaQuery.paddingOf(context).bottom + 6,
-      ),
-      child: Row(
-        children: List.generate(modules.length, (index) {
-          final selected = _selectedModuleIndex == index;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _changeModule(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFB83357) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFFB83357)
-                          : const Color(0xFFE5E1DE),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        moduleIcons[index],
-                        size: 20,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF1E2A44),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        modules[index],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: selected
-                              ? Colors.white
-                              : const Color(0xFF1E2A44),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
+  Widget _buildCustomBottomNav() => ModuleNavigation(
+    labels: modules,
+    icons: moduleIcons,
+    selectedIndex: _selectedModuleIndex,
+    onChanged: (index) => setState(() {
+      _selectedModuleIndex = index;
+    }),
+  );
 
   List<Map<String, dynamic>> _readJuegos(Map<String, dynamic> data) {
     final raw = data['juegosVideos'];
@@ -1711,13 +1683,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
     required bool enabled,
     required VoidCallback? onTap,
   }) {
-    return Card(
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: const Color(0xFFF5F3F2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Borgona.background,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: enabled ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1726,13 +1698,13 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB83357).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                decoration: NeoDecoration(
+                  color: Borgona.burgundy.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   icon,
-                  color: enabled ? const Color(0xFFB83357) : Colors.grey[500],
+                  color: enabled ? Borgona.burgundy : Borgona.secondary,
                 ),
               ),
               const SizedBox(width: 14),
@@ -1742,8 +1714,8 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF1E2A44),
+                      style: TextStyle(
+                        color: Borgona.navy,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1753,7 +1725,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                      style: TextStyle(color: Borgona.secondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1761,7 +1733,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
               const SizedBox(width: 10),
               Icon(
                 enabled ? Icons.open_in_new : Icons.link_off,
-                color: enabled ? const Color(0xFF1E2A44) : Colors.grey[500],
+                color: enabled ? Borgona.navy : Borgona.secondary,
               ),
             ],
           ),
@@ -1771,9 +1743,9 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
   }
 
   Widget _buildReportCard(String title, String value, Color color) {
-    return Card(
+    return NeoCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -1790,7 +1762,7 @@ class _HomeCatequistaScreenState extends State<HomeCatequistaScreen> {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
+              decoration: NeoDecoration(
                 color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1820,8 +1792,7 @@ class GroupInfoScreen extends StatefulWidget {
 }
 
 class _GroupInfoScreenState extends State<GroupInfoScreen> {
-  static const String _cloudinaryCloudName = 'izwqrc3a';
-  static const String _cloudinaryUploadPreset = 'reportes_unsigned';
+  final ReportImageService _reportImages = ReportImageService();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _imagePicker = ImagePicker();
@@ -1836,6 +1807,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
   @override
   void dispose() {
+    _reportImages.close();
     _incidenceSubjectController.dispose();
     super.dispose();
   }
@@ -1900,7 +1872,9 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       await batch.commit();
       _showSnackBar('Asistencia registrada');
     } catch (e) {
-      _showSnackBar('No se pudo registrar la asistencia: $e');
+      _showSnackBar(
+        'No se pudo registrar la asistencia. Revisa tu conexión e intenta de nuevo.',
+      );
     }
   }
 
@@ -1913,14 +1887,15 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     final today = _todayAttendanceId();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Borgona.sunken,
       appBar: AppBar(
         title: const Text('Mis grupos'),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E2A44),
+        foregroundColor: Borgona.navy,
         elevation: 0,
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -1951,7 +1926,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                 return Center(
                   child: Text(
                     'Grupo no encontrado',
-                    style: TextStyle(color: Colors.red[600]),
+                    style: TextStyle(color: Borgona.burgundy),
                   ),
                 );
               }
@@ -1991,7 +1966,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                         ? [
                             Text(
                               'No hay catequistas asignados.',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(color: Borgona.secondary),
                             ),
                           ]
                         : catequistas.map((catequista) {
@@ -2044,9 +2019,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
           setState(() => _classSessionOpen = true);
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: classIsActive
-              ? const Color(0xFFB83357)
-              : Colors.grey[400],
+          backgroundColor: classIsActive ? Borgona.burgundy : Borgona.secondary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 15),
         ),
@@ -2106,7 +2079,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
               ? [
                   Text(
                     'No hay alumnos en este grupo.',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: Borgona.secondary),
                   ),
                 ]
               : alumnos.map((doc) {
@@ -2136,13 +2109,13 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     final asistencia = alumnoData['asistencia'] ?? 0;
     final today = _todayAttendanceId();
 
-    return Card(
+    return NeoCard(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.grey[50],
+      color: Borgona.sunken,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Borgona.sunken),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -2152,11 +2125,11 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFFE5E1DE),
+                  backgroundColor: Borgona.sunken,
                   child: Text(
                     nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
                     style: TextStyle(
-                      color: const Color(0xFF1E2A44),
+                      color: Borgona.navy,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -2173,11 +2146,11 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'Apoderado: $telefonoApoderado',
-                        style: TextStyle(color: Colors.grey[700]),
+                        style: TextStyle(color: Borgona.secondary),
                       ),
                       Text(
                         'Asistencias: $asistencia',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: Borgona.secondary),
                       ),
                     ],
                   ),
@@ -2253,25 +2226,24 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     return _buildInfoCard(
       title: 'Reporte de clase',
       children: [
-        StreamBuilder<DocumentSnapshot>(
-          stream: _firestore
-              .collection('reportesClase')
-              .doc('${widget.groupId}_$today')
-              .snapshots(),
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _todayReport(today).snapshots(),
           builder: (context, snapshot) {
-            final alreadyUploaded = snapshot.data?.exists ?? false;
+            if (snapshot.hasError) {
+              return Text(
+                'No se pudo consultar el reporte. Revisa tu conexión y los permisos del grupo.',
+                style: TextStyle(color: Borgona.burgundy),
+              );
+            }
+            final alreadyUploaded = snapshot.data?.docs.isNotEmpty ?? false;
             return Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: alreadyUploaded
-                    ? const Color(0xFFF5F3F2)
-                    : Colors.grey[50],
+              decoration: NeoDecoration(
+                color: alreadyUploaded ? Borgona.background : Borgona.sunken,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: alreadyUploaded
-                      ? const Color(0xFFB83357)
-                      : Colors.grey[200]!,
+                  color: alreadyUploaded ? Borgona.burgundy : Borgona.sunken,
                 ),
               ),
               child: Row(
@@ -2281,8 +2253,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                         ? Icons.check_circle_outline
                         : Icons.pending_actions_outlined,
                     color: alreadyUploaded
-                        ? const Color(0xFFB83357)
-                        : Colors.grey[700],
+                        ? Borgona.burgundy
+                        : Borgona.secondary,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2292,8 +2264,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                           : 'Sube Pizarra, Mesas y Limpio para cerrar la clase.',
                       style: TextStyle(
                         color: alreadyUploaded
-                            ? const Color(0xFFB83357)
-                            : Colors.grey[800],
+                            ? Borgona.burgundy
+                            : Borgona.secondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -2339,7 +2311,9 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   Widget _buildClassPhotoPicker(String key, bool activeClass) {
     return _buildPhotoPickerTile(
       title: _classPhotoLabel(key),
-      subtitle: activeClass ? 'Obligatoria, solo camara' : 'Sin clase activa',
+      subtitle: activeClass
+          ? 'Obligatoria · cámara o galería'
+          : 'Sin clase activa',
       photo: _classReportPhotos[key],
       enabled: activeClass && !_savingClassReport,
       icon: _classPhotoIcon(key),
@@ -2371,7 +2345,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
           activeClass
               ? 'Registra incidencias de uno o mas alumnos durante la clase activa.'
               : 'Las incidencias solo se registran cuando hay clase activa.',
-          style: TextStyle(color: Colors.grey[700]),
+          style: TextStyle(color: Borgona.secondary),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -2381,7 +2355,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
           decoration: const InputDecoration(
             labelText: 'Asunto de la incidencia',
             alignLabelWithHint: true,
-            border: OutlineInputBorder(),
+            border: NeoInputBorder(),
           ),
         ),
         const SizedBox(height: 12),
@@ -2389,7 +2363,9 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         const SizedBox(height: 12),
         _buildPhotoPickerTile(
           title: 'Foto de la incidencia',
-          subtitle: activeClass ? 'Opcional, solo camara' : 'Sin clase activa',
+          subtitle: activeClass
+              ? 'Opcional · cámara o galería'
+              : 'Sin clase activa',
           photo: _incidencePhoto,
           enabled: activeClass && !_savingIncidence,
           onPick: () async {
@@ -2457,14 +2433,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         if (alumnos.isEmpty) {
           return Text(
             'No hay alumnos en este grupo.',
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(color: Borgona.secondary),
           );
         }
 
         return Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(8),
+          decoration: NeoDecoration(
+            border: Border.all(color: Borgona.sunken),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             children: alumnos.map((doc) {
@@ -2508,12 +2484,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     final fileName = photo?.name.trim();
 
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
+      decoration: NeoDecoration(
+        border: Border.all(color: Borgona.sunken),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: enabled ? const Color(0xFFB83357) : null),
+        leading: photo == null
+            ? Icon(icon, color: enabled ? Borgona.burgundy : null)
+            : SelectedPhotoThumbnail(photo),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           fileName == null || fileName.isEmpty ? subtitle : fileName,
@@ -2532,7 +2510,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
             IconButton(
               onPressed: enabled ? onPick : null,
               icon: const Icon(Icons.add_a_photo_outlined),
-              tooltip: 'Tomar foto',
+              tooltip: 'Agregar foto',
             ),
           ],
         ),
@@ -2541,6 +2519,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   }
 
   Future<void> _saveClassReport({required String groupName}) async {
+    if (_savingClassReport) return;
     final user = FirebaseAuth.instance.currentUser;
     final missingPhoto = [
       'pizarra',
@@ -2550,11 +2529,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
     if (user == null) {
       _showSnackBar('Vuelve a iniciar sesion para guardar');
-      return;
-    }
-
-    if (!await _isTodayActiveClass()) {
-      _showSnackBar('Hoy no hay clase activa para subir reportes');
       return;
     }
 
@@ -2568,12 +2542,21 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     });
 
     try {
+      if (!await _isTodayActiveClass()) {
+        _showSnackBar('Hoy no hay clase activa para guardar');
+        return;
+      }
       final now = DateTime.now();
       final today = _todayAttendanceId();
       final docRef = _firestore
           .collection('reportesClase')
           .doc('${widget.groupId}_$today');
-      final existingDoc = await docRef.get();
+      // Query by assigned group: a get on a missing document has no grupoId
+      // for the security rules to check and is denied for catequistas.
+      final existingReports = await _todayReport(today).get();
+      final existingData = existingReports.docs.isEmpty
+          ? <String, dynamic>{}
+          : existingReports.docs.first.data();
       final catequistaNombre = await _loadCatequistaName(user);
       final fotos = <String, Map<String, String>>{};
 
@@ -2600,9 +2583,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         'catequistaNombre': catequistaNombre,
       };
 
-      if (!existingDoc.exists) {
-        reportData['createdAt'] = FieldValue.serverTimestamp();
-      }
+      reportData['createdAt'] =
+          existingData['createdAt'] ?? FieldValue.serverTimestamp();
 
       batch.set(docRef, reportData, SetOptions(merge: true));
       _addSuperiorNotificationToBatch(
@@ -2623,7 +2605,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       });
       _showSnackBar('Reporte de clase guardado');
     } catch (e) {
-      _showSnackBar('No se pudo guardar el reporte: $e');
+      _showSnackBar(reportSaveError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -2634,16 +2616,12 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   }
 
   Future<void> _saveIncidence({required String groupName}) async {
+    if (_savingIncidence) return;
     final user = FirebaseAuth.instance.currentUser;
     final asunto = _incidenceSubjectController.text.trim();
 
     if (user == null) {
       _showSnackBar('Vuelve a iniciar sesion para guardar');
-      return;
-    }
-
-    if (!await _isTodayActiveClass()) {
-      _showSnackBar('Hoy no hay clase activa para registrar incidencias');
       return;
     }
 
@@ -2662,6 +2640,10 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     });
 
     try {
+      if (!await _isTodayActiveClass()) {
+        _showSnackBar('Hoy no hay clase activa para guardar');
+        return;
+      }
       final now = DateTime.now();
       final today = _todayAttendanceId();
       final docRef = _firestore.collection('incidencias').doc();
@@ -2721,7 +2703,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       });
       _showSnackBar('Incidencia guardada');
     } catch (e) {
-      _showSnackBar('No se pudo guardar la incidencia: $e');
+      _showSnackBar(reportSaveError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -2750,22 +2732,26 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   }
 
   Future<XFile?> _pickCameraPhoto() async {
-    if (!await _isTodayActiveClass()) {
-      _showSnackBar('Hoy no hay clase activa para tomar fotos');
-      return null;
-    }
-
     try {
-      return await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 82,
-        maxWidth: 1600,
-      );
+      if (!await _isTodayActiveClass()) {
+        _showSnackBar('Hoy no hay clase activa para añadir fotos');
+        return null;
+      }
+      if (!mounted) return null;
+      return await chooseReportPhoto(context, _imagePicker);
     } catch (e) {
-      _showSnackBar('No se pudo tomar la foto: $e');
+      _showSnackBar(
+        'No se pudo seleccionar la foto. Revisa el permiso de cámara o fotos en Ajustes.',
+      );
       return null;
     }
   }
+
+  Query<Map<String, dynamic>> _todayReport(String today) => _firestore
+      .collection('reportesClase')
+      .where('grupoId', isEqualTo: widget.groupId)
+      .where('fechaId', isEqualTo: today)
+      .limit(1);
 
   Future<bool> _isTodayActiveClass() async {
     final today = _todayAttendanceId();
@@ -2792,53 +2778,12 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     required XFile photo,
     required String folder,
     required String filePrefix,
-  }) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'sin-usuario';
-    final extension = _photoExtension(photo);
-    final cloudinaryFolder = _cleanCloudinaryPath('reportes/$folder/$userId');
-    final fileName =
-        '${_cleanCloudinarySegment(filePrefix)}_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    final bytes = await photo.readAsBytes();
-    final request =
-        http.MultipartRequest(
-            'POST',
-            Uri.https(
-              'api.cloudinary.com',
-              '/v1_1/$_cloudinaryCloudName/image/upload',
-            ),
-          )
-          ..fields['upload_preset'] = _cloudinaryUploadPreset
-          ..fields['folder'] = cloudinaryFolder
-          ..files.add(
-            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
-          );
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final error = responseData['error'];
-      final message = error is Map<String, dynamic>
-          ? (error['message'] ?? 'error desconocido').toString()
-          : 'error desconocido';
-      throw Exception('Cloudinary no acepto la imagen: $message');
-    }
-
-    final secureUrl = (responseData['secure_url'] ?? '').toString();
-    final publicId = (responseData['public_id'] ?? '').toString();
-    if (secureUrl.isEmpty || publicId.isEmpty) {
-      throw Exception('Cloudinary no devolvio la URL de la imagen');
-    }
-
-    return {
-      'url': secureUrl,
-      'path': publicId,
-      'provider': 'cloudinary',
-      'publicId': publicId,
-      'assetId': (responseData['asset_id'] ?? '').toString(),
-    };
-  }
+  }) => _reportImages.upload(
+    photo: photo,
+    folder: folder,
+    filePrefix: filePrefix,
+    userId: FirebaseAuth.instance.currentUser!.uid,
+  );
 
   void _addSuperiorNotificationToBatch({
     required WriteBatch batch,
@@ -2865,37 +2810,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       'createdBy': user.uid,
       'createdByEmail': user.email ?? '',
     });
-  }
-
-  String _photoExtension(XFile photo) {
-    final name = photo.name.toLowerCase();
-    final dotIndex = name.lastIndexOf('.');
-
-    if (dotIndex >= 0 && dotIndex < name.length - 1) {
-      final extension = name.substring(dotIndex + 1);
-      if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
-        return extension;
-      }
-    }
-
-    final mimeType = photo.mimeType ?? '';
-    if (mimeType.contains('png')) return 'png';
-    if (mimeType.contains('webp')) return 'webp';
-    if (mimeType.contains('heic')) return 'heic';
-    return 'jpg';
-  }
-
-  String _cleanCloudinaryPath(String value) {
-    return value
-        .split('/')
-        .map(_cleanCloudinarySegment)
-        .where((segment) => segment.isNotEmpty)
-        .join('/');
-  }
-
-  String _cleanCloudinarySegment(String value) {
-    final cleaned = value.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-    return cleaned.trim().isEmpty ? 'archivo' : cleaned;
   }
 
   String _classPhotoLabel(String key) {
@@ -2953,9 +2867,9 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     required String title,
     required List<Widget> children,
   }) {
-    return Card(
+    return NeoCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -2979,7 +2893,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+          Text(label, style: TextStyle(fontSize: 14, color: Borgona.secondary)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

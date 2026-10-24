@@ -1,14 +1,16 @@
+import 'design/borgona_theme.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const Color _navy = Color(0xFF1E2A44);
-  static const Color _bone = Color(0xFFF5F3F2);
-  static const Color _wine = Color(0xFFB83357);
+  static Color get _navy => Borgona.navy;
+  static Color get _bone => Borgona.background;
+  static Color get _wine => Borgona.burgundy;
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Scaffold(
       backgroundColor: _bone,
       appBar: AppBar(
@@ -22,9 +24,32 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          const _SettingsOptionCard(
-            icon: Icons.dark_mode_outlined,
-            title: 'Modo Oscuro',
+          NeoCard(
+            margin: EdgeInsets.zero,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: Borgona.darkMode,
+              builder: (context, enabled, child) => SwitchListTile(
+                title: const Text('Modo Oscuro'),
+                subtitle: Text(enabled ? 'Activado' : 'Desactivado'),
+                secondary: const Icon(Icons.dark_mode_outlined),
+                value: enabled,
+                onChanged: (value) async {
+                  try {
+                    await Borgona.setDarkMode(value);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudo guardar la preferencia. Vuelve a intentar.',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           const _SettingsOptionCard(
@@ -56,11 +81,12 @@ class _SettingsOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    Theme.of(context);
+    return NeoCard(
       margin: EdgeInsets.zero,
       elevation: 1.5,
       color: SettingsScreen._bone,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -69,21 +95,21 @@ class _SettingsOptionCard extends StatelessWidget {
         leading: Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
+          decoration: NeoDecoration(
             color: SettingsScreen._wine.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(icon, color: SettingsScreen._wine),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: SettingsScreen._navy,
             fontWeight: FontWeight.w800,
           ),
         ),
         subtitle: const Text('Proximamente'),
-        trailing: const Icon(Icons.lock_outline, color: SettingsScreen._navy),
+        trailing: Icon(Icons.lock_outline, color: SettingsScreen._navy),
       ),
     );
   }

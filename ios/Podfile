@@ -1,0 +1,74 @@
+platform :ios, '13.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    # These FlutterFire versions import Firebase's umbrella header.
+    if ['firebase_core', 'firebase_auth', 'cloud_firestore'].include?(target.name)
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
+
+    # Older Firebase pods pass a warning setting as a compiler flag. Modern
+    # Xcode rejects it, so remove only that flag from BoringSSL sources.
+    if target.name == 'BoringSSL-GRPC'
+      target.source_build_phase.files.each do |file|
+        next unless file.settings && file.settings['COMPILER_FLAGS']
+
+        flags = file.settings['COMPILER_FLAGS'].split
+        flags.delete('-GCC_WARN_INHIBIT_ALL_WARNINGS')
+        file.settings['COMPILER_FLAGS'] = flags.join(' ')
+      end
+    end
+
+    # gRPC 1.62 needs explicit template arguments with modern Clang.
+    if ['gRPC-Core', 'gRPC-C++'].include?(target.name)
+      header = installer.sandbox.root.join("#{target.name}/src/core/lib/promise/detail/basic_seq.h")
+      if header.exist?
+        original = header.read
+        corrected = original.gsub('Traits::template CallSeqFactory(', 'Traits::template CallSeqFactory<>(')
+        if corrected != original
+          File.chmod(0644, header)
+          header.write(corrected)
+        end
+      end
+    end
+  end
+end
